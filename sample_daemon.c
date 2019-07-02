@@ -1,3 +1,28 @@
+//gcc -o sampled sample_daemon.c
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <syslog.h>
+#include <string.h>
+#include <signal.h>
+/*
+#include <stdarg.h>
+#include <sys/param.h>
+#include <inttypes.h>
+#include <pthread.h>
+*/
+#define OK           0
+#define ERR_FORK     28
+#define ERR_SETSID   58
+#define ERR_CHDIR    37
+
+#define DAEMON_NAME	"sampled123"
+
 static void _signal_handler(const int signal)
 {
 	switch(signal)
@@ -32,19 +57,19 @@ int main(void)
 
 	if (pid < 0)
 	{
-		syslog(LOG_ERR, ERROR_FORMAT, strerror(errno));
-		return ERR_FORK;
+		syslog(LOG_ERR, "Forking Error! '%s'\n", strerror(errno));
+		exit(ERR_FORK);
 	}
 
 	if (pid > 0)
 	{
-		return OK;
+		exit(OK);
 	}
 
 	if (setsid() < -1)
 	{
-		syslog(LOG_ERR, ERROR_FORMAT, strerror(errno));
-		return ERR_SETSID;
+		syslog(LOG_ERR, "Error: not the leader of the session! '%s'\n", strerror(errno));
+		exit(ERR_SETSID);
 	}
 
 	close(STDIN_FILENO);
@@ -55,8 +80,8 @@ int main(void)
 
 	if (chdir("/") < 0)
 	{
-		syslog(LOG_ERR, ERROR_FORMAT, strerror(errno));
-		return ERR_CHDIR;
+		syslog(LOG_ERR, "Error: cannot change to / (root) '%s'\n", strerror(errno));
+		exit(ERR_CHDIR);
 	}
 
 	signal(SIGTERM, _signal_handler);
@@ -64,5 +89,5 @@ int main(void)
 
 	_do_work();
 
-	return ERR_WTF;
+	exit(OK);
 }
