@@ -1,4 +1,5 @@
-//gcc -o sampled sample_daemon.c
+// Compilation Command: gcc -o timed time_daemon.c
+// Check syslog: tail /var/log/syslog
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -10,18 +11,15 @@
 #include <syslog.h>
 #include <string.h>
 #include <signal.h>
-/*
-#include <stdarg.h>
-#include <sys/param.h>
-#include <inttypes.h>
-#include <pthread.h>
-*/
+#include <time.h>
+#include <sys/time.h>
+#include <stdint.h>
+
 #define OK           0
 #define ERR_FORK     28
 #define ERR_SETSID   58
 #define ERR_CHDIR    37
-
-#define DAEMON_NAME	"sampled123"
+#define DAEMON_NAME	"timed"
 
 static void _signal_handler(const int signal)
 {
@@ -43,7 +41,15 @@ static void _do_work(void)
 {
 	for (int i = 0; true; ++i)
 	{
-		syslog(LOG_INFO, "iteration: %d", i);
+		struct timeval tv;
+		gettimeofday(&tv,NULL);
+		uint64_t sec=tv.tv_sec;
+		uint64_t min=tv.tv_sec/60;
+		struct tm cur_tm;
+		localtime_r((time_t*)&sec,&cur_tm);
+		char cur_time[20];
+		snprintf(cur_time,20,"%d-%02d-%02d %02d:%02d:%02d",cur_tm.tm_year+1900,cur_tm.tm_mon+1,cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min,cur_tm.tm_sec);
+		syslog(LOG_INFO, "system time: %s", cur_time);
 		sleep(1);
 	}
 }
